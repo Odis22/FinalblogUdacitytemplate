@@ -64,6 +64,49 @@ def render_post(response, post):
     response.out.write('<b>' + post.subject + '</b><br>')
     response.out.write(post.content)
 
+	
+def user(func):
+	@wraps(func)
+		def wrapper(self):
+			if not self.user
+            	return self.redirect('/login')
+       	
+def user_owns_post(self, post):
+	@wraps(function)
+	def wrapper(self, post):
+    return self.user.name == post.author
+    if not user_owns_post(self, post):
+        return self.redirect('/')
+	
+def user_owns_comment(self, post):
+	@wraps(function)
+	def wrapper(self, comment):
+    return self.user.name == comment.author
+    if not user_owns_post(self, comment):
+        return self.redirect('/')
+
+def post_exists(function):
+    @wraps(function)
+    def wrapper(self, post_id):
+        key = db.Key.from_path('Post', int(post_id))
+        post = db.get(key)
+        if post:
+            return function(self, post_id, post)
+        else:
+            self.error(404)
+
+def comment_exists(function):
+    @wraps(function)
+    def wrapper(self, comment_id):
+        key = db.Key.from_path('Comment', int(comment_id))
+        commentt = db.get(key)
+        if post:
+            return function(self, comment_id, comment)
+        else:
+            self.error(404)
+            return
+    return wrapper
+
 class MainPage(BlogHandler):
   def get(self):
       self.write('Hello, Udacity!')
@@ -220,22 +263,16 @@ class NewPost(BlogHandler):
             self.render("newpost.html", subject=subject, content=content, error=error)
 
 class EditPost(BlogHandler):
+	@BlogHandler.user_owns_post
     def get(self):
-        if self.user:
+        if not self.user:
+			self.redirect('/blog)
+		else:			  
             post_id = self.request.get("post")
             key = db.Key.from_path('Post', int(post_id), parent=blog_key())
             post = db.get(key)
             author = post.author
             logged_user = self.user.name
-            
-
-            if post.author.name != self.user.name:
-                self.redirect("blog/%s" % post_id)
-            else:
-                if not post:
-                    self.write('You cannot edit this post')
-            return
-
             self.render("editpost.html", subject=post.subject, content=post.content, post=post)
     
     def post(self):
