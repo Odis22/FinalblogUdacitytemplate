@@ -66,10 +66,10 @@ def render_post(response, post):
 
 	
 def user(func):
-	@wraps(func)
-		def wrapper(self):
-			if not self.user
-            	return self.redirect('/login')
+@wraps(func)
+	def wrapper(self):
+		if not self.user
+			return self.redirect('/login')
        	
 def user_owns_post(self, post):
 	@wraps(function)
@@ -248,7 +248,7 @@ class NewPost(BlogHandler):
 
     def post(self):
         if not self.user:
-            self.redirect('/blog')
+            self.redirect('/login')
 
         subject = self.request.get('subject')
         content = self.request.get('content')
@@ -264,9 +264,10 @@ class NewPost(BlogHandler):
 
 class EditPost(BlogHandler):
 	@BlogHandler.user_owns_post
+	@BlogHandler.post_exist
     def get(self):
         if not self.user:
-			self.redirect('/blog)
+			self.redirect('/login')
 		else:			  
             post_id = self.request.get("post")
             key = db.Key.from_path('Post', int(post_id), parent=blog_key())
@@ -275,108 +276,114 @@ class EditPost(BlogHandler):
             logged_user = self.user.name
             self.render("editpost.html", subject=post.subject, content=post.content, post=post)
     
+	@BlogHandler.user_owns_post
+	@BlogHandler.post_exist					  
     def post(self):
-        post_id = self.request.get("post")
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
-        author = post.author
-        logged_user = self.user.name
+		if not self.user:
+            self.redirect('/login')
+        else:					  
+        	post_id = self.request.get("post")
+  			key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        	post = db.get(key)
+        	author = post.author
+        	logged_user = self.user.name
     
 
         
-        if not self.user:
-            self.redirect('/login')
-        else:
+        if subject and content:
             post.subject = self.request.get('subject')
             post.content = self.request.get('content')
             post.put()
             self.redirect("/")
 
 class DeletePost(BlogHandler):
+	@BlogHandler.user_owns_post
+	@BlogHandler.post_exist
     def get(self):
-        if self.user:
+        if not self.user:
+			self.redirect('/login')
+		else:
             post_id = self.request.get("post")
             key = db.Key.from_path('Post', int(post_id), parent=blog_key())
             post = db.get(key)
             author = post.author
             logged_user = self.user.name
-            
-
-            if post.author.name != self.user.name:
-                self.redirect("/blog/%s", post_id)
-            else:
-                if not post:
-                    self.error(404)
-                    return
-                self.render("deletepost.html", post=post)
+            self.render("deletepost.html", post=post)
         else:
             self.redirect("/login")
-
+	
+	@BlogHandler.user_owns_post
+	@BlogHandler.post_exist					  
     def post(self):
-        post_id = self.request.get("post")
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
-        author = post.author
-        logged_user = self.user.name
+		if not self.user:
+			self.redirect
+		else:
+	        post_id = self.request.get("post")
+    	    key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+    	    post = db.get(key)
+        	author = post.author
+        	logged_user = self.user.name
         
         if post and post.author.name == self.user.name:
             db.delete(key)
         self.redirect("/blog")
 
 class EditComment(BlogHandler):
+	@BlogHandler.user_owns_comment
+	@BlogHandler.comment_exist					  
     def get(self):
-        if self.user:
+        if not self.user:
+			self.redirect
+		else:
             comment_id = self.request.get("comment")
             key = db.Key.from_path('Comment', int(comment_id))
-            comment = db.get(key)
-            
-            if comment.author.name != self.user.name:
-                self.redirect("/%s" % comment.post_id)
-            else:
-                if not comment:
-                    self.error(404)
-                    return
-                self.render("editcomment.html", content=comment.content,
-                            post_id=comment.post_id)
-        else:
-            self.redirect("/login")
-
+            comment = db.get(key) 
+            self.render("editcomment.html", content=comment.content,
+                        post_id=comment.post_id)
+        
+	@BlogHandler.user_owns_comment
+	@BlogHandler.comment_exist
     def post(self):
-        comment_id = self.request.get("comment")
-        key = db.Key.from_path('Comment', int(comment_id))
-        comment = db.get(key)
+		if not self.user:
+			self.redirect(/login
+		else:
+        	comment_id = self.request.get("comment")
+        	key = db.Key.from_path('Comment', int(comment_id))
+     		comment = db.get(key)
 
-        if comment and comment.author.name == self.user.name:
-            content = self.request.get("content")
+        	if comment and comment.author.name == self.user.name:
+            	content = self.request.get("content")
                            
-        if content:
-            comment.content = content
-            comment.put()
-            self.redirect("/%s" % comment.post_id)
-        else:
-            error = "subject and content, please!"
-            self.render("editcomment.html", post_id=comment.post_id,
+        	if content:
+            	comment.content = content
+            	comment.put()
+            	self.redirect("/%s" % comment.post_id)
+        	else:
+            	error = "subject and content, please!"
+            	self.render("editcomment.html", post_id=comment.post_id,
                         content=content, error=error)
 
 class DeleteComment(BlogHandler):
+	@BlogHandler.user_owns_comment
+	@BlogHandler.comment_exist						  
     def get(self):
-        if self.user:
-            comment_id = self.request.get("comment")
+        if not self.user:
+			self.redirect(/login)
+		else:
+			comment_id = self.request.get("comment")
             key = db.Key.from_path('Comment', int(comment_id))
             comment = db.get(key)
 
-            if comment.author.name != self.user.name:
-                self.redirect("/%s" % comment.post_id)
-            else:
-                if not comment:
-                    self.error(404)
-                    return
-                self.render("deletecomment.html", comment=comment)
-        else:
-            self.redirect("/login")
-
+            
+            self.render("deletecomment.html", comment=comment)
+      
+            
+	@BlogHandler.user_owns_comment
+	@BlogHandler.comment_exist
     def post(self):
-        comment_id = self.request.get("comment")
+		if not self.user:
+			self.redirect
+						  comment_id = self.request.get("comment")
         key = db.Key.from_path('Comment', int(comment_id))
         comment = db.get(key)
 
